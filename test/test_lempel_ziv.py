@@ -3,10 +3,12 @@ import os
 import unittest
 import string
 
-from compression import lempel_ziv, lz77_cps, lz77_sliding_window, lz78_block
-from generator import rand, named
+from compression import (lempel_ziv, lz77_cps, lz77_sliding_window,
+                         lz78_block, lz77_kkp3)
 
 import parameterized
+
+from generator import rand, named
 
 from string_indexing import lpf
 
@@ -28,8 +30,14 @@ LEMPEL_ZIV_CODECS = [
     lz77_cps.compress,
     lz77_cps.decompress
   ],
+  [
+    'LZ77 with KKP3 factorization',
+    lz77_kkp3.compress,
+    lz77_kkp3.decompress
+  ],
 ]
 
+# pylint: disable=too-many-public-methods
 class TestLempelZiv77(unittest.TestCase):
   run_large = unittest.skipUnless(
       os.environ.get('LARGE', False), 'Skip test in small runs')
@@ -176,6 +184,11 @@ class TestLempelZiv77(unittest.TestCase):
         (parameters.n, parameters.max_length, parameters.Ll), (4, 0, 0))
     self.assertEqual(parameters.Lc, 1 + parameters.Lp)
 
+  def test_kkp_factors(self):
+    factors = lz77_kkp3.factorize('#zzzzzipzip', 10)
+    self.assertEqual([(f.length, f.literal) for f in factors],
+                     [(0, 'z'), (4, 'i'), (0, 'p'), (2, 'p')])
+
 
   def check_round_trip(self, text, compress, decompress, A = None):
     w = '#' + text
@@ -215,4 +228,3 @@ class TestLempelZiv77(unittest.TestCase):
     for _ in range(T):
       self.check_round_trip(
           rand.random_word(n, A)[1:], compress, decompress, A)
-
