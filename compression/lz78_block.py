@@ -15,13 +15,14 @@ def codeword_width(parameters, j):
   """
   Width in bits of the j-th codeword of a block: ceil(log2(j * alpha))
   """
-  return math.ceil(math.log(j * parameters.alpha, 2))
+  return (j * parameters.alpha - 1).bit_length()
 
 # Stats
 @dataclass
 class Stats:
-  def __init__(self):
-    self.source_symbols, self.phrases, self.bits = 0, 0, 0
+  source_symbols: int = 0
+  phrases: int = 0
+  bits: int = 0
 
 def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:

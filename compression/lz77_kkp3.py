@@ -13,15 +13,15 @@ def make_parameters(alpha, n, max_length):
     raise ValueError('alpha >= 2 expected')
   if n < 0:
     raise ValueError('n >= 0 expected')
-  Lp = math.ceil(math.log(n + 1, alpha))
+  Lp = math.ceil(math.log(max(n, 1), alpha))
   Ll = math.ceil(math.log(max_length + 1, alpha))
   return Parameters(alpha, n, max_length, Lp, Ll, 1 + Lp + Ll)
 
 # Stats
 @dataclass
 class Stats:
-  def __init__(self):
-    self.source_symbols, self.words = 0, 0
+  source_symbols: int = 0
+  words: int = 0
 
 def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:

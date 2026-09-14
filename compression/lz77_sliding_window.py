@@ -21,8 +21,8 @@ def make_parameters(alpha, n, Ls):
 # Stats
 @dataclass
 class Stats:
-  def __init__(self):
-    self.source_symbols, self.words = 0, 0
+  source_symbols: int = 0
+  words: int = 0
 
 def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:

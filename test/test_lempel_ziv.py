@@ -64,6 +64,19 @@ def lz78_dictionary_compress(w, _n, A = None):
 def lz78_dictionary_decompress(code, _n, _parameters, _A):
   return '#' + lz78.lz78_decompress(code)
 
+def naive_lz77_as_pairs(w, n, _A):
+  return [(length, literal) for _, length, literal in lempel_ziv.lz77(w, n)]
+
+def lz77_sliding_window_as_pairs(w, n, A):
+  return [(length, literal)
+          for _, length, literal in lz77_sliding_window_as_triples(w, n, A)]
+
+def lz77_cps_as_pairs(w, n, _A):
+  return [(f.length, f.literal) for f in lz77_cps.factorize(w, n)]
+
+def lz77_kkp3_as_pairs(w, n, _A):
+  return [(f.length, f.literal) for f in lz77_kkp3.factorize(w, n)]
+
 LEMPEL_ZIV_77_CODECS = [
   [
     'LZ77 sliding window',
@@ -95,6 +108,13 @@ LEMPEL_ZIV_78_CODECS = [
 LEMPEL_ZIV_FACTORIZATIONS = [
   [ 'naive', lempel_ziv.naive_factorization ],
   [ 'Crochemore-Ilie-Smyth', lempel_ziv.crochemore_ilie_smyth ],
+]
+
+LEMPEL_ZIV_77_FACTORIZATIONS = [
+  [ 'naive LZ77', naive_lz77_as_pairs ],
+  [ 'LZ77 sliding window', lz77_sliding_window_as_pairs ],
+  [ 'LZ77 with CPS factorization', lz77_cps_as_pairs ],
+  [ 'LZ77 with KKP3 factorization', lz77_kkp3_as_pairs ],
 ]
 
 class TestLempelZiv(unittest.TestCase):
@@ -290,6 +310,27 @@ class TestLempelZiv77(unittest.TestCase):
     _, LEN = lz77_cps.chen_puglisi_smyth_factorization(w, n)
     self.assertEqual(LEN, lpf.naive(w, n),
         f'CPS shows different then naive factorization for {text}')
+
+  def check_lz77_factorization(self, text, factorization):
+    w, n = '#' + text, len(text)
+    A = sorted(set(text)) if len(set(text)) > 1 else ['a', 'b']
+    self.assertEqual(
+        factorization(w, n, A),
+        [(length, literal) for _, length, literal in lempel_ziv.lz77(w, n)],
+        f'the factorization does not match lempel_ziv.lz77 for {text}')
+
+  @parameterized.parameterized.expand(LEMPEL_ZIV_77_FACTORIZATIONS)
+  def test_lz77_factorizations_agree_random(self, _, factorization):
+    T, n, A = 5, 200, ['a', 'b', 'c']
+    for _ in range(T):
+      self.check_lz77_factorization(rand.random_word(n, A)[1:], factorization)
+
+  @parameterized.parameterized.expand(LEMPEL_ZIV_77_FACTORIZATIONS)
+  @run_large
+  def test_lz77_factorizations_agree_random_large(self, _, factorization):
+    T, n, A = 5, 2000, ['a', 'b', 'c', 'd']
+    for _ in range(T):
+      self.check_lz77_factorization(rand.random_word(n, A)[1:], factorization)
 
   def test_cps_matches_naive(self):
     for text in ['a', 'ab', 'aaaaaaaa', 'aabbaabbbaaabbb',
