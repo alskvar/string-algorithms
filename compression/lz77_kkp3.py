@@ -1,4 +1,5 @@
 import collections
+from dataclasses import dataclass
 import math
 
 from common import numeric
@@ -16,9 +17,8 @@ def make_parameters(alpha, n, max_length):
   Ll = math.ceil(math.log(max_length + 1, alpha))
   return Parameters(alpha, n, max_length, Lp, Ll, 1 + Lp + Ll)
 
-#----------------------------------------------------
 # Stats
-# @dataclass
+@dataclass
 class Stats:
   def __init__(self):
     self.source_symbols, self.words = 0, 0
@@ -27,9 +27,8 @@ def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:
     return 0.0
   return stats.words * parameters.Lc / stats.source_symbols
-#----------------------------------------------------
 
-#----------------------------------------------------
+
 # Factorization
 NextPrevSmallerValue = collections.namedtuple(
   'NextPrevSmallerValue', ['next', 'prev'])
@@ -83,9 +82,7 @@ def factorize(w, n, smaller_values = None):
                            length, w[i + length]))
     i += length + 1
   return factors
-#----------------------------------------------------
 
-#----------------------------------------------------
 # Encoder
 class Encoder:
   def __init__(self, w, n, A):
@@ -116,9 +113,7 @@ class Encoder:
     while self.has_more():
       stream += self.encode_next()
     return stream
-#----------------------------------------------------
 
-#----------------------------------------------------
 # Decoder
 class Decoder:
   def __init__(self, parameters):
@@ -149,7 +144,6 @@ class Decoder:
       self.decode_next(stream[i:i + self.parameters.Lc])
     out = self.out[1:]
     return out[:source_length] if source_length else out
-#----------------------------------------------------
 
 def compress(source, n, A = None):
   A = sorted(set(source[1:n + 1])) if A is None else sorted(A)

@@ -1,4 +1,5 @@
 import collections
+from dataclasses import dataclass
 import math
 
 from common import numeric
@@ -17,9 +18,8 @@ def make_parameters(alpha, n, Ls):
   Ll = math.ceil(math.log(Ls, alpha))
   return Parameters(alpha, n, Ls, Lp, Ll, 1 + Lp + Ll, n - Ls)
 
-#----------------------------------------------------
 # Stats
-# @dataclass
+@dataclass
 class Stats:
   def __init__(self):
     self.source_symbols, self.words = 0, 0
@@ -28,10 +28,7 @@ def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:
     return 0.0
   return stats.words * parameters.Lc / stats.source_symbols
-#----------------------------------------------------
 
-
-#----------------------------------------------------
 # Ring buffer of size exactly n for faster shifting
 class Ring:
   """
@@ -55,18 +52,16 @@ class Ring:
 
   def slice(self, begin, count):
     return [self.at(begin + k) for k in range(count)]
-#----------------------------------------------------
-
-
 
 # Encoder
-def _reproducible_extension(ring, j, m):
+def _reproducible_extension(
+    ring, j, m, max_allowed_length, buffer_parsed_length):
   """
   Longest prefix of B(j + 1 .. m) that occurs in B(1 .. m)
   and starts in B(1 .. j)
   """
-  max_length, best_position, best_length = m - j, 1, 0
-  for i in range(1, j + 1):
+  max_length, best_position, best_length = min(m - j, max_allowed_length), 1, 0
+  for i in range(j - buffer_parsed_length + 1, j + 1):
     length = 0
     while (length < max_length
            and ring.at(i - 1 + length) == ring.at(j + length)):
@@ -97,8 +92,13 @@ class Encoder:
 
   def encode_next(self):
     j = self.parameters.window_size
+    not_parsed_length = len(self.source) - self.encoded
+    # the buffer starts zero filled, so we are processing
+    # only the cells that already hold parsed data
+    buffer_parsed_length = min(j, self.encoded)
     position, length = _reproducible_extension(
-      self.buffer, j, self.parameters.n - 1)
+      self.buffer, j, self.parameters.n - 1,
+      not_parsed_length - 1, buffer_parsed_length)
     parsed_length = length + 1
 
     C = (numeric.to_radix(
@@ -113,8 +113,7 @@ class Encoder:
     self.encoded += parsed_length
     self.stats.words += 1
 
-    # last source block fallback
-    self.stats.source_symbols = min(self.encoded, len(self.source))
+    self.stats.source_symbols = self.encoded
     return C
 
   def encode_all(self):
@@ -122,10 +121,7 @@ class Encoder:
     while self.has_more():
       stream += self.encode_next()
     return stream
-#---------------------------------------------------
 
-
-#--------------------------------------------------
 #Decoder
 class Decoder:
   def __init__(self, parameters):
@@ -159,7 +155,6 @@ class Decoder:
     for i in range(0, len(stream), self.parameters.Lc):
       out += self.decode_next(stream[i:i + self.parameters.Lc])
     return out[:source_length] if source_length else out
-#--------------------------------------------------
 
 def compress(source, n, buffer_len, lookahead_len, A = None):
   A = sorted(set(source[1:n + 1])) if A is None else sorted(A)

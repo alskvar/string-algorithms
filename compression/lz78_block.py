@@ -1,4 +1,5 @@
 import collections
+from dataclasses import dataclass
 import math
 
 Parameters = collections.namedtuple('Parameters', ['alpha', 'block_len'])
@@ -16,9 +17,8 @@ def codeword_width(parameters, j):
   """
   return math.ceil(math.log(j * parameters.alpha, 2))
 
-#----------------------------------------------------
 # Stats
-# @dataclass
+@dataclass
 class Stats:
   def __init__(self):
     self.source_symbols, self.phrases, self.bits = 0, 0, 0
@@ -27,10 +27,7 @@ def compression_ratio(stats, parameters):
   if stats.source_symbols == 0:
     return 0.0
   return stats.bits / (stats.source_symbols * math.log2(parameters.alpha))
-#----------------------------------------------------
 
-
-#----------------------------------------------------
 # Bit stream, most significant bit first
 BitBuffer = collections.namedtuple('BitBuffer', ['data', 'bits'])
 
@@ -64,10 +61,7 @@ class BitReader:
       value = (value << 1) | ((byte >> (7 - self.pos % 8)) & 1)
       self.pos += 1
     return value
-#----------------------------------------------------
 
-
-#----------------------------------------------------
 # Dictionary of phrases, a trie stored as parent links
 Entry = collections.namedtuple('Entry', ['parent', 'last'])
 
@@ -107,10 +101,7 @@ class Dictionary:
       index = self.entries[index].parent
     phrase.reverse()
     return phrase
-#----------------------------------------------------
 
-
-#----------------------------------------------------
 # Encoder
 class Encoder:
   def __init__(self, parameters, source):
@@ -161,10 +152,7 @@ class Encoder:
     while self.has_more():
       self.encode_block()
     return self.encode_res.buffer()
-#---------------------------------------------------
 
-
-#--------------------------------------------------
 #Decoder
 # pylint: disable=too-few-public-methods
 class Decoder:
@@ -192,7 +180,6 @@ class Decoder:
         j += 1
 
     return out
-#--------------------------------------------------
 
 def compress(source, n, block_len, A = None):
   A = sorted(set(source[1:n + 1])) if A is None else sorted(A)
